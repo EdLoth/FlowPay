@@ -1,5 +1,6 @@
 import { prisma } from '../prisma/client';
 import type {
+  AtendenteComOcupacao,
   AtendimentoRepository,
   CriarAtendimentoInput,
 } from '../../../domain/repositories/AtendimentoRepository';
@@ -104,5 +105,27 @@ export class PrismaAtendimentoRepository implements AtendimentoRepository {
         data: { atendenteId, status: 'EM_ATENDIMENTO', atribuidoEm: new Date() },
       });
     });
+  }
+
+  async listarTodos() {
+    return prisma.atendimento.findMany({ orderBy: { criadoEm: 'desc' } });
+  }
+
+  async listarComOcupacao(): Promise<AtendenteComOcupacao[]> {
+    const atendentes = await prisma.atendente.findMany({
+      include: {
+        time: true,
+        _count: { select: { atendimentos: { where: { status: 'EM_ATENDIMENTO' } } } },
+      },
+    });
+
+    return atendentes.map((a) => ({
+      id: a.id,
+      nome: a.nome,
+      timeId: a.timeId,
+      timeNome: a.time.nome,
+      capacidadeMaxima: a.capacidadeMaxima,
+      atendimentosAtivos: a._count.atendimentos,
+    }));
   }
 }
