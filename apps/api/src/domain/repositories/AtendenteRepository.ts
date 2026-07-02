@@ -1,9 +1,7 @@
-export interface AtendenteComOcupacao {
-  id: string;
-  nome: string;
-  timeId: string;
+import type { Atendente } from '../entities/Atendente';
+
+export interface AtendenteComOcupacao extends Atendente {
   timeNome: string;
-  capacidadeMaxima: number;
   atendimentosAtivos: number;
 }
 
