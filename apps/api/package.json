@@ -14,15 +14,18 @@
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "bullmq": "^5.79.2",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^4.21.2",
     "ioredis": "^5.11.1",
-    "pg": "^8.22.0"
+    "pg": "^8.22.0",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@flowpay/eslint-config": "workspace:*",
     "@flowpay/prettier-config": "workspace:*",
     "@flowpay/tsconfig": "workspace:*",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.5",
     "@types/pg": "^8.20.0",
