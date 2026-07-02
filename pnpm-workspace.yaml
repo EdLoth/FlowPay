@@ -1,11 +1,12 @@
 packages:
   - "apps/*"
   - "packages/*"
-
 allowBuilds:
   "@prisma/engines": true
   esbuild: true
+  msgpackr-extract: true
   prisma: true
-
 onlyBuiltDependencies:
   - esbuild
+overrides:
+  ioredis: 5.10.1
