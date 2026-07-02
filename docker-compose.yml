@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: flowpay
+      POSTGRES_PASSWORD: flowpay
+      POSTGRES_DB: flowpay
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://flowpay:flowpay@postgres:5432/flowpay
+      REDIS_URL: redis://redis:6379
+      PORT: 3000
+    volumes:
+      - ./apps/api/src:/app/apps/api/src
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  postgres_data:

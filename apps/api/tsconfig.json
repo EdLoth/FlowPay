@@ -1,0 +1,4 @@
+{
+  "extends": "@flowpay/tsconfig/node.json",
+  "include": ["src"]
+}
