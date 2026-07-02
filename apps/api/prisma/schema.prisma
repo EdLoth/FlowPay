@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum StatusAtendimento {
+  AGUARDANDO_FILA
+  EM_ATENDIMENTO
+  FINALIZADO
+}
+
+enum StatusOutboxEvent {
+  PENDENTE
+  PUBLICADO
+  FALHOU
+}
+
+model Time {
+  id         String      @id @default(uuid())
+  nome       String      @unique
+  atendentes Atendente[]
+  atendimentos Atendimento[]
+
+  @@map("times")
+}
+
+model Atendente {
+  id               String        @id @default(uuid())
+  nome             String
+  timeId           String        @map("time_id")
+  time             Time          @relation(fields: [timeId], references: [id])
+  capacidadeMaxima Int           @default(3) @map("capacidade_maxima")
+  atendimentos     Atendimento[]
+
+  @@map("atendentes")
+}
+
+model Atendimento {
+  id                  String            @id @default(uuid())
+  assunto             String
+  assuntoNormalizado  String            @map("assunto_normalizado")
+  timeId              String            @map("time_id")
+  time                Time              @relation(fields: [timeId], references: [id])
+  atendenteId         String?           @map("atendente_id")
+  atendente           Atendente?        @relation(fields: [atendenteId], references: [id])
+  status              StatusAtendimento @default(AGUARDANDO_FILA)
+  idempotencyKey      String?           @unique @map("idempotency_key")
+  criadoEm            DateTime          @default(now()) @map("criado_em")
+  atribuidoEm         DateTime?         @map("atribuido_em")
+  finalizadoEm        DateTime?         @map("finalizado_em")
+
+  @@map("atendimentos")
+}
+
+model OutboxEvent {
+  id          String            @id @default(uuid())
+  tipo        String
+  payload     Json
+  status      StatusOutboxEvent @default(PENDENTE)
+  tentativas  Int               @default(0)
+  criadoEm    DateTime          @default(now()) @map("criado_em")
+  publicadoEm DateTime?         @map("publicado_em")
+
+  @@map("outbox_events")
+}
