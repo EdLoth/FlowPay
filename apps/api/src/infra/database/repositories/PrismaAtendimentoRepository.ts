@@ -58,4 +58,51 @@ export class PrismaAtendimentoRepository implements AtendimentoRepository {
   async buscarPorIdempotencyKey(key: string): Promise<Atendimento | null> {
     return prisma.atendimento.findUnique({ where: { idempotencyKey: key } });
   }
+
+  async finalizar(atendimentoId: string) {
+    return prisma.$transaction(async (tx) => {
+      const atendimento = await tx.atendimento.update({
+        where: { id: atendimentoId },
+        data: { status: 'FINALIZADO', finalizadoEm: new Date() },
+      });
+
+      if (atendimento.atendenteId) {
+        await tx.outboxEvent.create({
+          data: {
+            tipo: 'ATENDENTE_LIBEROU',
+            payload: { atendenteId: atendimento.atendenteId, timeId: atendimento.timeId },
+          },
+        });
+      }
+
+      return atendimento;
+    });
+  }
+
+  async atribuirProximoDaFila(atendenteId: string, timeId: string) {
+    return prisma.$transaction(async (tx) => {
+      // Trava a linha do atendente pra evitar que dois eventos "liberou"
+      // concorrentes tentem atribuir dois atendimentos ao mesmo atendente.
+      const [atendente] = await tx.$queryRaw<{ id: string; capacidade_maxima: number }[]>`
+        SELECT id, capacidade_maxima FROM atendentes WHERE id = ${atendenteId} FOR UPDATE
+      `;
+      if (!atendente) return null;
+
+      const ativos = await tx.atendimento.count({
+        where: { atendenteId, status: 'EM_ATENDIMENTO' },
+      });
+      if (ativos >= atendente.capacidade_maxima) return null;
+
+      const proximo = await tx.atendimento.findFirst({
+        where: { timeId, status: 'AGUARDANDO_FILA' },
+        orderBy: { criadoEm: 'asc' },
+      });
+      if (!proximo) return null;
+
+      return tx.atendimento.update({
+        where: { id: proximo.id },
+        data: { atendenteId, status: 'EM_ATENDIMENTO', atribuidoEm: new Date() },
+      });
+    });
+  }
 }

@@ -1,5 +1,6 @@
 import express from 'express';
 import { iniciarOutboxPublisher } from './infra/queue/outboxPublisher';
+import { iniciarWorkers } from './infra/queue/worker';
 
 const app = express();
 app.use(express.json());
@@ -15,3 +16,4 @@ app.listen(PORT, () => {
 });
 
 iniciarOutboxPublisher();
+iniciarWorkers();

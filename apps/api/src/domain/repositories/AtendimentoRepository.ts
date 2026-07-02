@@ -10,4 +10,6 @@ export interface CriarAtendimentoInput {
 export interface AtendimentoRepository {
   criarComAtribuicaoAtomica(input: CriarAtendimentoInput): Promise<Atendimento>;
   buscarPorIdempotencyKey(key: string): Promise<Atendimento | null>;
+  finalizar(atendimentoId: string): Promise<Atendimento>;
+  atribuirProximoDaFila(atendenteId: string, timeId: string): Promise<Atendimento | null>;
 }

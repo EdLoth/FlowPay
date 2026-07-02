@@ -1,5 +1,5 @@
 import { prisma } from '../database/prisma/client';
-import { obterFila } from './filas';
+import { obterFila, type JobDistribuicao } from './filas';
 
 const INTERVALO_MS = 2000;
 
@@ -45,15 +45,24 @@ export async function processarEvento(evento: { id: string; tipo: string; payloa
         include: { time: true },
       });
       const fila = obterFila(atendimento.time.nome);
-      await fila.add('distribuir-atendimento', { atendimentoId: atendimento.id });
+      await fila.add('distribuir-atendimento', {
+        atendimentoId: atendimento.id,
+      } satisfies JobDistribuicao);
       break;
     }
     case 'ATENDIMENTO_ATRIBUIDO':
       // Já foi atribuído na criação — nenhuma ação de fila necessária aqui.
       break;
-    case 'ATENDENTE_LIBEROU':
-      // Implementado no próximo passo (2.6), quando o worker existir.
+    case 'ATENDENTE_LIBEROU': {
+      const { atendenteId, timeId } = payload as { atendenteId: string; timeId: string };
+      const time = await prisma.time.findUniqueOrThrow({ where: { id: timeId } });
+      const fila = obterFila(time.nome);
+      await fila.add('atendente-liberou', {
+        atendenteId,
+        timeId,
+      } satisfies { atendenteId: string; timeId: string });
       break;
+    }
     default:
       console.warn(`Tipo de evento outbox desconhecido: ${evento.tipo}`);
   }
