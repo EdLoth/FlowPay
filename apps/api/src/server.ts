@@ -1,21 +1,10 @@
 import http from 'node:http';
-import cors from 'cors';
-import express from 'express';
+import { criarApp } from './app';
 import { iniciarOutboxPublisher } from './infra/queue/outboxPublisher';
 import { iniciarWorkers } from './infra/queue/worker';
 import { iniciarSocket } from './infra/realtime/socket';
-import { router } from './interfaces/http/routes';
 
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
-});
-
-app.use(router);
-
+const app = criarApp();
 const httpServer = http.createServer(app);
 iniciarSocket(httpServer);
 
