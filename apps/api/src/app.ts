@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express from 'express';
 import { router } from './interfaces/http/routes';
+import { errorHandler } from './interfaces/http/middlewares/errorHandler';
 
 export function criarApp() {
   const app = express();
@@ -12,6 +13,7 @@ export function criarApp() {
   });
 
   app.use(router);
+  app.use(errorHandler);
 
   return app;
 }

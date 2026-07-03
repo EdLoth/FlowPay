@@ -1,4 +1,7 @@
 import { prisma } from '../prisma/client';
+import { Prisma } from '../../../generated/prisma/client';
+import { NotFoundError } from '../../../core/errors/NotFoundError';
+
 import type {
   AtendenteComOcupacao,
   AtendimentoRepository,
@@ -61,23 +64,30 @@ export class PrismaAtendimentoRepository implements AtendimentoRepository {
   }
 
   async finalizar(atendimentoId: string) {
-    return prisma.$transaction(async (tx) => {
-      const atendimento = await tx.atendimento.update({
-        where: { id: atendimentoId },
-        data: { status: 'FINALIZADO', finalizadoEm: new Date() },
-      });
-
-      if (atendimento.atendenteId) {
-        await tx.outboxEvent.create({
-          data: {
-            tipo: 'ATENDENTE_LIBEROU',
-            payload: { atendenteId: atendimento.atendenteId, timeId: atendimento.timeId },
-          },
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const atendimento = await tx.atendimento.update({
+          where: { id: atendimentoId },
+          data: { status: 'FINALIZADO', finalizadoEm: new Date() },
         });
-      }
 
-      return atendimento;
-    });
+        if (atendimento.atendenteId) {
+          await tx.outboxEvent.create({
+            data: {
+              tipo: 'ATENDENTE_LIBEROU',
+              payload: { atendenteId: atendimento.atendenteId, timeId: atendimento.timeId },
+            },
+          });
+        }
+
+        return atendimento;
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundError('Atendimento não encontrado.');
+      }
+      throw error;
+    }
   }
 
   async atribuirProximoDaFila(atendenteId: string, timeId: string) {

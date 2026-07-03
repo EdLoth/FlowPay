@@ -3,12 +3,13 @@ import { CriarAtendimento } from '../../../application/use-cases/CriarAtendiment
 import { PrismaAtendimentoRepository } from '../../../infra/database/repositories/PrismaAtendimentoRepository';
 import { PrismaTimeRepository } from '../../../infra/database/repositories/PrismaTimeRepository';
 import { notificarDashboard } from '../../../infra/realtime/socket';
+import { ValidationError } from '../../../core/errors/ValidationError';
 
 export async function criarAtendimento(req: Request, res: Response) {
   const { assunto, idempotencyKey } = req.body as { assunto?: string; idempotencyKey?: string };
 
   if (!assunto || typeof assunto !== 'string' || assunto.trim().length === 0) {
-    return res.status(400).json({ erro: 'O campo "assunto" é obrigatório.' });
+    throw new ValidationError('O campo "assunto" é obrigatório.');
   }
 
   const useCase = new CriarAtendimento(
